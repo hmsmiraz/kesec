@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+:root {
+  --ink-950: #0e1113;
+  --ink-900: #171b1e;
+  --ink-850: #1c2124;
+  --ink-800: #262c30;
+  --ink-700: #3a4147;
+  --ink-600: #545c62;
+
+  --parchment: #edeae2;
+  --parchment-dim: #a3a9ac;
+
+  --brass: #c9a15a;
+  --brass-bright: #ddbc78;
+  --brass-dim: #8d7442;
+
+  --sage: #7fa98c;
+  --sage-bright: #96c0a7;
+
+  --rust: #c1604a;
+  --rust-bright: #d97c64;
+}
+
+@theme inline {
+  --color-ink-950: var(--ink-950);
+  --color-ink-900: var(--ink-900);
+  --color-ink-850: var(--ink-850);
+  --color-ink-800: var(--ink-800);
+  --color-ink-700: var(--ink-700);
+  --color-ink-600: var(--ink-600);
+
+  --color-parchment: var(--parchment);
+  --color-parchment-dim: var(--parchment-dim);
+
+  --color-brass: var(--brass);
+  --color-brass-bright: var(--brass-bright);
+  --color-brass-dim: var(--brass-dim);
+
+  --color-sage: var(--sage);
+  --color-sage-bright: var(--sage-bright);
+
+  --color-rust: var(--rust);
+  --color-rust-bright: var(--rust-bright);
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--ink-950);
+  color: var(--parchment);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 161, 90, 0.08), transparent);
+  background-attachment: fixed;
+}
+
+* {
+  border-color: var(--ink-800);
+}
+
+/* Visible keyboard focus everywhere, styled to match the palette instead of the browser default. */
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
