@@ -28,6 +28,11 @@ ENV NODE_ENV=production
 # into the base image tag yet - same reasoning as the backend Dockerfile.
 RUN apk update && apk upgrade --no-cache
 
+# The standalone Next.js server only needs the node binary at runtime, not
+# npm - removing it (and its bundled dependency tree) closes an entire class
+# of vulnerabilities in code we never actually execute here.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 COPY --from=builder /app/public ./public
