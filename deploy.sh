@@ -25,6 +25,14 @@ if [ ! -f .env ]; then
   echo "-> No .env found, creating one."
   read -rp "   Domain (or this VM's IP if you don't have one yet): " DOMAIN
 
+  if [[ "$DOMAIN" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    CADDY_ADDRESS="http://${DOMAIN}"
+    echo "   Detected an IP address - serving plain HTTP only (no certificate is possible for a bare IP)."
+  else
+    CADDY_ADDRESS="${DOMAIN}"
+    echo "   Detected a domain - Caddy will automatically obtain an HTTPS certificate for it."
+  fi
+
   # Fernet key = 32 random bytes, url-safe base64 - generated with stdlib only,
   # no need to pip install the cryptography package on the bare VM.
   ENCRYPTION_KEY=$(python3 -c "import secrets, base64; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())")
@@ -34,6 +42,7 @@ if [ ! -f .env ]; then
 
   cat > .env << ENVEOF
 DOMAIN=${DOMAIN}
+CADDY_ADDRESS=${CADDY_ADDRESS}
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
 MYSQL_PASSWORD=${MYSQL_PASSWORD}
 JWT_SECRET_KEY=${JWT_SECRET_KEY}
@@ -43,9 +52,19 @@ ENVEOF
   chmod 600 .env
   echo "-> .env created with freshly generated secrets."
 else
-  echo "-> .env already exists, leaving it as-is."
+  echo "-> .env already exists, leaving secrets as-is."
   # shellcheck disable=SC1091
   source .env
+
+  # Backfill CADDY_ADDRESS for .env files created before this variable existed.
+  if ! grep -q '^CADDY_ADDRESS=' .env; then
+    echo "-> .env predates CADDY_ADDRESS - adding it based on your existing DOMAIN value."
+    if [[ "$DOMAIN" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+      echo "CADDY_ADDRESS=http://${DOMAIN}" >> .env
+    else
+      echo "CADDY_ADDRESS=${DOMAIN}" >> .env
+    fi
+  fi
 fi
 echo ""
 
