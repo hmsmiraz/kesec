@@ -1,0 +1,28 @@
+name: Reset VM (destructive - wipes database volume)
+
+# Manually triggered only, never runs automatically. Use this exactly once
+# when rotating to a new set of secrets, or deliberately starting over.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Stop stack and wipe volumes
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" '
+            if [ -d ~/kesec ]; then
+              cd ~/kesec
+              sudo docker compose -f docker-compose.prod.yml down -v || true
+            else
+              echo "No existing ~/kesec directory - nothing to reset."
+            fi
+          '
