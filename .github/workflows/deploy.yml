@@ -77,29 +77,70 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push backend image
+      # NOTE: images are built with push:false/load:true here - loaded into
+      # the local Docker daemon but NOT pushed yet. They're only pushed
+      # further down, after Trivy has scanned them. This is what makes the
+      # scan an actual gate rather than a report generated after the fact.
+
+      - name: Build backend image (local only)
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          push: true
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          push: false
+          load: true
+          tags: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and push frontend image
+      - name: Build frontend image (local only)
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          push: true
+          push: false
+          load: true
           build-args: |
             NEXT_PUBLIC_API_URL=
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          tags: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Installing the Trivy CLI directly from its pinned official release,
+      # rather than using aquasecurity/trivy-action - that wrapper Action had
+      # 76 of its 77 release tags hijacked in a March 2026 supply-chain
+      # attack that stole CI/CD secrets from runners using it. Same reasoning
+      # as using raw ssh/scp for deployment instead of a third-party action.
+      - name: Install Trivy (pinned official release binary)
+        run: |
+          TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+          echo "Installing Trivy v${TRIVY_VERSION}"
+          curl -sfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o /tmp/trivy.tar.gz
+          tar -zxf /tmp/trivy.tar.gz -C /tmp trivy
+          sudo mv /tmp/trivy /usr/local/bin/trivy
+          trivy --version
+
+      - name: Trivy scan - backend image
+        run: |
+          trivy image --severity CRITICAL,HIGH --exit-code 1 --format table \
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+
+      - name: Trivy scan - frontend image
+        run: |
+          trivy image --severity CRITICAL,HIGH --exit-code 1 --format table \
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+      # Only reached if both scans passed (exit-code 1 above would have
+      # already stopped the job otherwise).
+      - name: Push backend image
+        run: |
+          docker tag ${{ env.BACKEND_IMAGE }}:${{ github.sha }} ${{ env.BACKEND_IMAGE }}:latest
+          docker push ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.BACKEND_IMAGE }}:latest
+
+      - name: Push frontend image
+        run: |
+          docker tag ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} ${{ env.FRONTEND_IMAGE }}:latest
+          docker push ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.FRONTEND_IMAGE }}:latest
 
   deploy:
     needs: build-and-push
