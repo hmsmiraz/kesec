@@ -3,6 +3,8 @@ name: Build, Push, and Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
 
 env:
@@ -10,7 +12,24 @@ env:
   FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kesec-frontend
 
 jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks needs history, not just the latest snapshot, to scan the actual commits being pushed
+
+      - name: Gitleaks - scan for leaked secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-and-push:
+    needs: security-scan
+    # Validate the build on PRs, but only push images and deploy on actual
+    # pushes to main - a PR shouldn't publish images or touch the VM.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -51,6 +70,7 @@ jobs:
 
   deploy:
     needs: build-and-push
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
