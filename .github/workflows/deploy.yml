@@ -12,7 +12,7 @@ env:
   FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kesec-frontend
 
 jobs:
-  security-scan:
+  gitleaks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,8 +25,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'kesec'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+
+      - name: Upload Dependency-Check report
+        if: always() # upload even when the scan fails the build, so the report explaining why is still visible
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: ${{ github.workspace }}/reports
+
   build-and-push:
-    needs: security-scan
+    needs: [gitleaks, dependency-check]
     # Validate the build on PRs, but only push images and deploy on actual
     # pushes to main - a PR shouldn't publish images or touch the VM.
     if: github.event_name != 'pull_request'
