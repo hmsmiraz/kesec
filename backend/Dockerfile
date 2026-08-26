@@ -21,6 +21,11 @@ FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
+# Pick up any OS-level security patches that exist upstream but aren't baked
+# into the base image tag yet - relying solely on the base image means
+# waiting on Docker Hub to rebuild it, which can lag behind actual fixes.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 # Fixed uid/gid (not just an auto-assigned one) so it's stable and
 # predictable across rebuilds - useful for volume permissions and auditing.
 RUN groupadd --gid 1000 appuser \

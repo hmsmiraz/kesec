@@ -24,6 +24,10 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Pick up any OS-level security patches that exist upstream but aren't baked
+# into the base image tag yet - same reasoning as the backend Dockerfile.
+RUN apk update && apk upgrade --no-cache
+
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 COPY --from=builder /app/public ./public
