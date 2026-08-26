@@ -29,7 +29,7 @@ services:
     # this compose network. Caddy is the only thing facing the internet.
 
   backend:
-    build: ./backend
+    image: ${DOCKERHUB_USERNAME}/kesec-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       DATABASE_URL: mysql+pymysql://kesec_user:${MYSQL_PASSWORD}@mysql:3306/kesec
@@ -58,12 +58,7 @@ services:
           memory: 256M
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        # Empty on purpose: the browser calls /api/* on the same origin,
-        # and Caddy routes that internally to the backend container.
-        NEXT_PUBLIC_API_URL: ""
+    image: ${DOCKERHUB_USERNAME}/kesec-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       backend:
