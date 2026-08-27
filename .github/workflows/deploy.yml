@@ -58,8 +58,27 @@ jobs:
           name: dependency-check-report
           path: ${{ github.workspace }}/reports
 
+  sonarqube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history improves analysis relevance (blame info, new-code detection)
+
+      # Pinned to an exact version, not a floating major tag - v6 was a
+      # ground-up rewrite specifically to fix a command-injection
+      # vulnerability in earlier releases of this action.
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+
   build-and-push:
-    needs: [gitleaks, dependency-check]
+    needs: [gitleaks, dependency-check, sonarqube]
     # Validate the build on PRs, but only push images and deploy on actual
     # pushes to main - a PR shouldn't publish images or touch the VM.
     if: github.event_name != 'pull_request'
