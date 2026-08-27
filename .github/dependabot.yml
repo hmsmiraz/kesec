@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker-compose"
+    directories:
+      - "/"
+    schedule:
+      interval: "weekly"
+
+  # Keeps pinned Action versions current - relevant after finding the
+  # trivy-action supply-chain incident: knowing when a new, reviewable
+  # version is available is worth having, even for actions we deliberately
+  # pin rather than track on a floating tag.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
