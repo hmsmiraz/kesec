@@ -110,6 +110,32 @@ services:
         limits:
           memory: 256M
 
+  # Runtime security monitoring - watches actual host/container syscall
+  # behavior (shells spawned in containers, sensitive file access, etc.),
+  # independent of everything scanned earlier in the CI pipeline. Uses the
+  # modern eBPF driver (bundled into the image, no kernel module or headers
+  # needed on the host) rather than the legacy kernel-module driver.
+  falco:
+    image: falcosecurity/falco-no-driver:0.39.1
+    container_name: falco
+    restart: unless-stopped
+    privileged: true # required for eBPF-based syscall monitoring
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+    command: ["falco", "--modern-bpf"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
 volumes:
   kesec_mysql_data:
   caddy_data:
