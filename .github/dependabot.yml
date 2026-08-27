@@ -4,17 +4,26 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "docker"
     directory: "/frontend"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker-compose"
     directories:
       - "/"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "mysql"
+        update-types: ["version-update:semver-major"]
 
   # Keeps pinned Action versions current - relevant after finding the
   # trivy-action supply-chain incident: knowing when a new, reviewable
