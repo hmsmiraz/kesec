@@ -116,16 +116,25 @@ services:
   # modern eBPF driver (bundled into the image, no kernel module or headers
   # needed on the host) rather than the legacy kernel-module driver.
   falco:
-    image: falcosecurity/falco-no-driver:0.39.1
+    # The lighter falco-no-driver image failed to initialize its eBPF probe
+    # on this VM's Google-customized kernel for reasons never fully
+    # diagnosed (ruled out: privileges, capabilities, BTF, kernel lockdown,
+    # JIT settings) - the full image works correctly, confirmed by manual
+    # testing, so using that instead despite the larger image size.
+    image: falcosecurity/falco:0.44.1
     container_name: falco
     restart: unless-stopped
     privileged: true # required for eBPF-based syscall monitoring
     security_opt:
       - apparmor:unconfined
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock:ro
       - /proc:/host/proc:ro
-    command: ["falco", "--modern-bpf"]
+      - /sys/kernel/tracing:/sys/kernel/tracing:ro
     logging:
       driver: json-file
       options:
