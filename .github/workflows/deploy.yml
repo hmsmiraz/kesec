@@ -70,7 +70,7 @@ jobs:
       # ground-up rewrite specifically to fix a command-injection
       # vulnerability in earlier releases of this action.
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
