@@ -102,7 +102,7 @@ jobs:
       # scan an actual gate rather than a report generated after the fact.
 
       - name: Build backend image (local only)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           push: false
@@ -113,7 +113,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build frontend image (local only)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           push: false
